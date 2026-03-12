@@ -1,62 +1,140 @@
 # Product Management API
 
-API NestJS para cadastro de usuarios, autenticacao JWT e gerenciamento de produtos com PostgreSQL + Prisma.
+API REST construída com NestJS para cadastro de usuários, autenticação com JWT e gerenciamento de produtos com PostgreSQL e Prisma.
+
+## Visão Geral
+
+O projeto expõe uma API com:
+
+- cadastro e login de usuários
+- consulta do usuário autenticado
+- CRUD de produtos
+- filtros públicos por nome, descrição e faixa de preço
+- documentação Swagger
+- testes unitários e e2e
 
 ## Stack
 
-- NestJS
+- Node.js 22+
+- NestJS 11
+- PostgreSQL 16
 - Prisma ORM
-- PostgreSQL
-- JWT com access token e refresh token
-- Swagger/OpenAPI
-- Postman
+- JWT
+- Swagger / OpenAPI
 - Jest + Supertest
+- Docker Compose
+
+## Funcionalidades
+
+- autenticação com e-mail e senha
+- tokens configurados como sem expiração
+- listagem pública de produtos
+- criação, edição e remoção de produtos apenas por usuários autenticados
+- proteção para que apenas o dono do produto possa alterá-lo ou removê-lo
+
+## Estrutura Base
+
+```text
+src/
+  auth/
+  common/
+  config/
+  database/
+  products/
+  users/
+prisma/
+  migrations/
+docs/
+test/
+scripts/
+```
 
 ## Requisitos
 
-- Node.js 22+
-- Docker opcional para subir o PostgreSQL
+- Node.js 22 ou superior
+- npm
+- Docker Desktop em execução
 
-## Configuracao
+## Variáveis de Ambiente
 
-1. Copie `.env.example` para `.env`.
-2. Suba o banco:
+Crie o arquivo `.env` com base no `.env.example`.
 
-```bash
-docker compose up -d
+Exemplo:
+
+```env
+PORT=3000
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/product_manager?schema=public"
+JWT_ACCESS_SECRET="replace-with-a-secure-access-secret"
+JWT_REFRESH_SECRET="replace-with-a-secure-refresh-secret"
+JWT_ACCESS_EXPIRES_IN="never"
+JWT_REFRESH_EXPIRES_IN="never"
 ```
 
-O PostgreSQL deste projeto fica exposto em `localhost:5433` para evitar conflito com outras instancias locais.
-
-3. Gere o client Prisma e aplique a migration:
+## Instalação
 
 ```bash
-npm run prisma:generate
-npm run prisma:migrate
+npm install
 ```
 
-4. Inicie a API:
+## Inicialização Rápida
 
-```bash
-npm run start:dev
-```
-
-## Inicializacao rapida
-
-Para subir o PostgreSQL, gerar o Prisma Client, aplicar as migrations existentes, iniciar o Prisma Studio, subir o backend em modo watch e abrir o Swagger automaticamente:
+Para subir o banco, gerar o Prisma Client, aplicar as migrations existentes, iniciar o Prisma Studio, subir o backend em modo watch e abrir o Swagger automaticamente:
 
 ```bash
 npm run dev:workspace
 ```
 
-## Documentacao
+Esse comando:
+
+- executa `docker compose up -d`
+- aguarda o PostgreSQL ficar pronto
+- roda `prisma generate`
+- roda `prisma migrate deploy`
+- inicia o Prisma Studio
+- inicia a API com watch
+- abre `http://localhost:3000/docs`
+
+## Inicialização Manual
+
+1. Suba o banco:
+
+```bash
+docker compose up -d
+```
+
+2. Gere o client do Prisma:
+
+```bash
+npm run prisma:generate
+```
+
+3. Aplique as migrations:
+
+```bash
+npx prisma migrate deploy
+```
+
+4. Inicie o backend:
+
+```bash
+npm run start:dev
+```
+
+5. Opcionalmente, abra o Prisma Studio:
+
+```bash
+npm run prisma:studio
+```
+
+## URLs Importantes
 
 - Swagger UI: `http://localhost:3000/docs`
-- Prefixo da API: `http://localhost:3000/api`
-- Colecao Postman: [docs/postman.collection.json](/c:/workspace/testRegisterProductBackend/docs/postman.collection.json)
-- Environment Postman: [docs/postman.environment.json](/c:/workspace/testRegisterProductBackend/docs/postman.environment.json)
+- API base: `http://localhost:3000/api`
+- PostgreSQL: `localhost:5433`
 
 ## Rotas
+
+Prefixo global: `/api`
 
 ### Auth
 
@@ -77,27 +155,40 @@ npm run dev:workspace
 - `PATCH /api/products/:id`
 - `DELETE /api/products/:id`
 
-## Filtros de produtos
+## Filtros de Produtos
 
-`GET /api/products` aceita:
+`GET /api/products` aceita os seguintes parâmetros de query:
 
 - `name`
 - `description`
 - `minPrice`
 - `maxPrice`
 
-## Regras de negocio
+Exemplo:
 
-- Apenas usuarios autenticados criam, editam e removem produtos.
-- O usuario autenticado so pode editar e remover produtos do proprio cadastro.
-- Listagem e detalhamento de produtos sao publicos.
-- Emails sao unicos.
-- Senhas sao armazenadas com hash bcrypt.
-- Refresh tokens sao persistidos com hash no banco e rotacionados no refresh.
-
-## Testes
-
-```bash
-npm test
-npm run test:e2e
+```http
+GET /api/products?name=mouse&minPrice=50&maxPrice=300
 ```
+
+## Regras de Negócio
+
+- e-mails são únicos
+- senhas são armazenadas com hash `bcrypt`
+- produtos podem ser listados e consultados publicamente
+- apenas usuários autenticados podem criar produtos
+- apenas o proprietário pode editar ou remover o produto
+- o refresh token é armazenado com hash no banco
+
+O schema Prisma está em [prisma/schema.prisma](c:/workspace/testRegisterProductBackend/prisma/schema.prisma).
+
+## Documentação e Coleções
+
+- Swagger: `http://localhost:3000/docs`
+- Postman Collection: [docs/postman.collection.json](c:/workspace/testRegisterProductBackend/docs/postman.collection.json)
+- Postman Environment: [docs/postman.environment.json](c:/workspace/testRegisterProductBackend/docs/postman.environment.json)
+
+## Observações
+
+- o script `npm run prisma:migrate` usa `prisma migrate dev`, indicado para desenvolvimento local
+- o script `npm run dev:workspace` usa `prisma migrate deploy`, mais seguro para inicialização automática
+- se o `prisma generate` falhar no Windows com erro de arquivo travado, normalmente há algum processo Node mantendo o engine do Prisma em uso
