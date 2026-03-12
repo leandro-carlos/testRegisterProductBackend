@@ -53,8 +53,8 @@ describe('AuthService', () => {
           const values: Record<string, string> = {
             'jwt.accessSecret': 'access-secret',
             'jwt.refreshSecret': 'refresh-secret',
-            'jwt.accessExpiresIn': '15m',
-            'jwt.refreshExpiresIn': '7d',
+            'jwt.accessExpiresIn': 'never',
+            'jwt.refreshExpiresIn': 'never',
           };
 
           return values[key];
@@ -95,6 +95,12 @@ describe('AuthService', () => {
       passwordHash: 'password-hash',
     });
     expect(prismaService.refreshToken.create).toHaveBeenCalled();
+    expect(jwtService.signAsync).toHaveBeenNthCalledWith(1, expect.any(Object), {
+      secret: 'access-secret',
+    });
+    expect(jwtService.signAsync).toHaveBeenNthCalledWith(2, expect.any(Object), {
+      secret: 'refresh-secret',
+    });
     expect(result.tokens.accessToken).toBe('access-token');
     expect(result.user.email).toBe('leandro@example.com');
   });
@@ -113,7 +119,7 @@ describe('AuthService', () => {
       id: 'token-1',
       userId: user.id,
       tokenHash: 'stored-hash',
-      expiresAt: new Date(Date.now() + 60_000),
+      expiresAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

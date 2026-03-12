@@ -41,6 +41,14 @@ npm run prisma:migrate
 npm run start:dev
 ```
 
+## Inicializacao rapida
+
+Para subir o PostgreSQL, gerar o Prisma Client, aplicar as migrations existentes, iniciar o Prisma Studio, subir o backend em modo watch e abrir o Swagger automaticamente:
+
+```bash
+npm run dev:workspace
+```
+
 ## Documentacao
 
 - Swagger UI: `http://localhost:3000/docs`

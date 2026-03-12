@@ -97,7 +97,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token is invalid');
     }
 
-    if (record.expiresAt.getTime() < Date.now()) {
+    if (record.expiresAt && record.expiresAt.getTime() < Date.now()) {
       await this.prisma.refreshToken.delete({
         where: { id: record.id },
       });
@@ -145,11 +145,11 @@ export class AuthService {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: this.accessSecret,
-        expiresIn: this.accessExpiresIn as never,
+        ...this.buildTokenOptions(this.accessExpiresIn),
       }),
       this.jwtService.signAsync(payload, {
         secret: this.refreshSecret,
-        expiresIn: this.refreshExpiresIn as never,
+        ...this.buildTokenOptions(this.refreshExpiresIn),
       }),
     ]);
 
@@ -169,7 +169,19 @@ export class AuthService {
     });
   }
 
+  private buildTokenOptions(expiresIn: string) {
+    if (this.isIndefiniteExpiry(expiresIn)) {
+      return {};
+    }
+
+    return { expiresIn: expiresIn as never };
+  }
+
   private resolveExpiryDate(expiresIn: string) {
+    if (this.isIndefiniteExpiry(expiresIn)) {
+      return null;
+    }
+
     const value = Number.parseInt(expiresIn.slice(0, -1), 10);
     const unit = expiresIn.slice(-1);
     const multipliers: Record<string, number> = {
@@ -184,6 +196,12 @@ export class AuthService {
     }
 
     return new Date(Date.now() + value * multiplier);
+  }
+
+  private isIndefiniteExpiry(expiresIn: string) {
+    return ['never', 'none', 'indefinido', 'indefinite'].includes(
+      expiresIn.toLowerCase(),
+    );
   }
 
   private async verifyRefreshToken(refreshToken: string) {

@@ -7,6 +7,14 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 
+function buildJwtSignOptions(expiresIn: string) {
+  if (['never', 'none', 'indefinido', 'indefinite'].includes(expiresIn.toLowerCase())) {
+    return {};
+  }
+
+  return { expiresIn: expiresIn as never };
+}
+
 @Module({
   imports: [
     ConfigModule,
@@ -17,11 +25,9 @@ import { JwtStrategy } from './jwt.strategy';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.getOrThrow<string>('jwt.accessSecret'),
-        signOptions: {
-          expiresIn: configService.getOrThrow<string>(
-            'jwt.accessExpiresIn',
-          ) as never,
-        },
+        signOptions: buildJwtSignOptions(
+          configService.getOrThrow<string>('jwt.accessExpiresIn'),
+        ),
       }),
     }),
   ],
